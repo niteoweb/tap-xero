@@ -9,6 +9,7 @@ from singer.utils import strftime
 import six
 import pytz
 from .credentials import build_oauth
+from xero.auth import PrivateCredentials
 from xero.exceptions import XeroUnauthorized
 
 BASE_URL = "https://api.xero.com/api.xro/2.0"
@@ -32,7 +33,12 @@ def _json_load_object_hook(_dict):
 class XeroClient(object):
     def __init__(self, config):
         self.session = requests.Session()
-        self.oauth = build_oauth(config)
+        if config["xero_app_type"] == "private":
+            credentials = PrivateCredentials(
+                config["consumer_key"], config["rsa_key"])
+            self.oauth = credentials.oauth
+        else:
+            self.oauth = build_oauth(config)
         self.user_agent = config.get("user_agent")
 
     def update_credentials(self, new_config):

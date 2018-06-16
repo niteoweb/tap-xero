@@ -38,8 +38,9 @@ def _make_request(ctx, tap_stream_id, filter_options=None, attempts=0):
     except XeroUnauthorized:
         if attempts == 1:
             raise Exception("Received Not Authorized response after credential refresh.")
-        new_config = credentials.refresh(ctx.config)
-        ctx.client.update_credentials(new_config)
+        if ctx.config["xero_app_type"] == "partner":
+            new_config = credentials.refresh(ctx.config)
+            ctx.client.update_credentials(new_config)
         return _make_request(ctx, tap_stream_id, filter_options, attempts + 1)
     except HTTPError as e:
         if e.response.status_code == 503:

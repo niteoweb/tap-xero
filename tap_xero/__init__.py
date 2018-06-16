@@ -14,7 +14,7 @@ from .context import Context
 CREDENTIALS_KEYS = ["consumer_key",
                     "consumer_secret",
                     "rsa_key"]
-REQUIRED_CONFIG_KEYS = ["start_date"] + CREDENTIALS_KEYS
+REQUIRED_CONFIG_KEYS = ["start_date", "xero_app_type"] + CREDENTIALS_KEYS
 
 LOGGER = singer.get_logger()
 
@@ -105,8 +105,15 @@ def load_and_write_schema(stream):
 
 
 def sync(ctx):
-    new_credentials = init_credentials(ctx.config)
-    ctx.client.update_credentials(new_credentials)
+    if ctx.config["xero_app_type"] == "partner":
+        new_credentials = init_credentials(ctx.config)
+        ctx.client.update_credentials(new_credentials)
+    else:
+        try:
+            print(ensure_credentials_are_valid(ctx.config))
+        except XeroUnauthorized as ex:
+            raise BadCredsException(BAD_CREDS_MESSAGE) from ex
+
     currently_syncing = ctx.state.get("currently_syncing")
     start_idx = streams_.all_stream_ids.index(currently_syncing) \
         if currently_syncing else 0
